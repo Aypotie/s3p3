@@ -44,6 +44,17 @@ public:
         len++;
     }
 
+    void pushForward(T value) {
+        if (static_cast<float>(len)/cap >= loadFactor) {
+            extend();
+        }
+        for (int i = len - 1; i >= 0; i--) {
+            data[i + 1] = data[i];
+        }
+        data[0] = value;
+        len++;
+    }
+
     void insert(int index, T value) {
         if (static_cast<float>(len)/cap >= loadFactor) {
             extend();

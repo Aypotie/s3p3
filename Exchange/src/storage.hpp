@@ -117,13 +117,29 @@ private:
     }
 
     string sockReceive(int sockfd) {
-        char buffer[8192] = {0};
-        int bytes_read = read(sockfd, buffer, sizeof(buffer) - 1);
-        if (bytes_read < 0) {
-            throw runtime_error("Failed to receive data");
+        constexpr size_t BUFFER_SIZE = 20000;
+        char buffer[BUFFER_SIZE];
+        string result;
+
+        while (true) {
+            memset(buffer, 0, sizeof(buffer));
+            int bytes_read = read(sockfd, buffer, sizeof(buffer) - 1);
+            if (bytes_read < 0) {
+                throw runtime_error("Failed to receive data");
+            }
+            if (bytes_read == 0) {
+                break; // Прерываем цикл, если данные закончились
+            }
+            result.append(buffer, bytes_read);
+
+            // Проверяем, завершен ли ответ (например, по соглашению о наличии терминатора)
+            if (result.find("Command executed successfully\n") != string::npos) {
+                break;
+            }
         }
-        return string(buffer, bytes_read);
+        return result;
     }
+
 
     void makeLots(vector<string> lotsToCreate) {
         auto lots = Select("SELECT lot.name FROM lot");
@@ -137,10 +153,12 @@ private:
     void makePairs(vector<string> lots) {
         auto pairs = Select("SELECT pair.pair_pk FROM pair");
         if (pairs.empty()) {
-            for (int i = 0; i < lots.size() - 1; i++) {
-                for (int j = i + 1; j < lots.size(); j++) {
-                    string query = "INSERT INTO pair VALUES ('" + to_string(i + 1) + "','" + to_string(j + 1) + "')";
-                    Insert(query);
+            for (int i = 0; i < lots.size(); i++) {
+                for (int j = 0; j < lots.size(); j++) {
+                    if (i != j) {
+                        string query = "INSERT INTO pair VALUES ('" + to_string(i + 1) + "','" + to_string(j + 1) + "')";
+                        Insert(query);
+                    }
                 }
             }
         }

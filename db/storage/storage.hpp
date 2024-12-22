@@ -151,8 +151,13 @@ struct Storage {
     if (condition.empty()) {
         if (tables.size() == 1) { // Одиночная таблица
             string tableName = tables.get(0);
-            Vector<string> availableColumns = schema.structure.get(tableName);
-            availableColumns.insert(0, tableName + "_pk");
+            Vector<string> availableColumns;
+            availableColumns.pushBack(tableName+"_pk");
+            for (int i = 0; i < schema.structure.get(tableName).size(); i++) {
+                availableColumns.pushBack(schema.structure.get(tableName).get(i));
+            }
+
+            // cout << availableColumns << endl;
             Vector<string> columnsToSelect;
 
             for (int i = 0; i < columns.size(); i++) {
@@ -167,6 +172,9 @@ struct Storage {
                 string requestedTable = fullColumn.substr(0, dotPos);
                 string requestedColumn = fullColumn.substr(dotPos + 1);
 
+                cout << requestedTable << " " << tableName << " " << requestedColumn << endl;
+                cout << availableColumns << endl;
+
                 if (requestedTable != tableName) {
                     output = "Error: Column '" + fullColumn + "' does not belong to table '" + tableName + "'.\n";
                     send(clientSocket, output.c_str(), output.size(), 0);
@@ -174,8 +182,7 @@ struct Storage {
                 }
 
                 if (availableColumns.find(requestedColumn) == -1) {
-                    cout << requestedColumn << endl;
-                    output = "Error: Column '" + requestedColumn + "' does not exist in table '" + tableName + "'.\n";
+                    output = "Error: Column '" + fullColumn + "' does not exist in table '" + tableName + "'.\n";
                     send(clientSocket, output.c_str(), output.size(), 0);
                     return;
                 }
